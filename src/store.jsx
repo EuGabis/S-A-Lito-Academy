@@ -12,7 +12,7 @@ const doBanco = (row) => ({
   name: row.name, email: row.email, telefone: row.telefone, curso: row.curso,
   turma: row.turma, progresso: Number(row.progresso), status: row.status,
   ultima: row.ultima, a: row.avatar_a, b: row.avatar_b,
-  check: row.check_data, jornada: row.jornada,
+  check: row.check_data, jornada: row.jornada, reunioes: row.reunioes,
 })
 const paraBanco = (a) => ({
   name: a.name, email: a.email, telefone: a.telefone, curso: a.curso,
@@ -32,11 +32,11 @@ export function StoreProvider({ children }) {
     ;(async () => {
       if (!supabasePronto) { setAlunos(alunosIniciais); setCarregando(false); return }
       try {
-        let { data, error } = await supabase.from('sa_alunos').select('*').order('created_at', { ascending: true })
+        let { data, error } = await supabase.from('sa_alunos').select('*').order('created_at', { ascending: true }).order('name', { ascending: true })
         if (error) throw error
         if (data.length === 0) {
           await supabase.from('sa_alunos').insert(alunosIniciais.map(paraBanco))
-          ;({ data } = await supabase.from('sa_alunos').select('*').order('created_at', { ascending: true }))
+          ;({ data } = await supabase.from('sa_alunos').select('*').order('created_at', { ascending: true }).order('name', { ascending: true }))
         }
         if (vivo) setAlunos(data.map(doBanco))
       } catch (e) {
@@ -65,6 +65,7 @@ export function StoreProvider({ children }) {
     if ('b' in patch) row.avatar_b = patch.b
     if ('check' in patch) row.check_data = patch.check
     if ('jornada' in patch) row.jornada = patch.jornada
+    if ('reunioes' in patch) row.reunioes = patch.reunioes
     if (Object.keys(row).length) await supabase.from('sa_alunos').update(row).eq('email', email)
   }
 

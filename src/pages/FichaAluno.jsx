@@ -57,16 +57,28 @@ function AbaDados({ aluno, check, setCheck }) {
 export default function FichaAluno({ aluno, onClose }) {
   const { atualizarAluno } = useStore()
   const [tab, setTab] = useState('Dados')
-  const [check, setCheck] = useState(aluno.check)
+  const [check, setCheckLocal] = useState(aluno.check)
   const [jornada, setJornadaLocal] = useState(aluno.jornada)
+  // Respostas de todas as reuniões, agrupadas por aba.
+  const [respostas, setRespostasLocal] = useState(
+    aluno.reunioes || { 'Reunião 01': {}, 'Reunião 02': {}, 'Imersão': {} }
+  )
 
-  // Ao mudar a jornada, atualiza a tela e também o store (pro card refletir).
+  // Cada alteração atualiza a tela e persiste no banco (via store).
+  const setCheck = (upd) => {
+    const nova = typeof upd === 'function' ? upd(check) : upd
+    setCheckLocal(nova)
+    atualizarAluno(aluno.email, { check: nova })
+  }
   const setJornada = (nova) => {
     setJornadaLocal(nova)
     atualizarAluno(aluno.email, { jornada: nova })
   }
-  // Respostas de todas as reuniões, agrupadas por aba. (Ainda não salvo — some ao fechar.)
-  const [respostas, setRespostas] = useState({ 'Reunião 01': {}, 'Reunião 02': {}, 'Imersão': {} })
+  const setRespostas = (upd) => {
+    const nova = typeof upd === 'function' ? upd(respostas) : upd
+    setRespostasLocal(nova)
+    atualizarAluno(aluno.email, { reunioes: nova })
+  }
   const [doc, setDoc] = useState(null) // { titulo, html } | null
   const sc = statusColors[aluno.status]
 
