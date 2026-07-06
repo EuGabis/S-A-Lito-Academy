@@ -125,64 +125,12 @@ export const tarefasColunas = [
 ]
 
 export const calendario = {
-  // Eventos por dia do mês (Julho/2026). Cada dia tem uma lista. hoje = dia 3.
-  eventos: {
-    3: [{ titulo: 'Reunião', cor: G.brand }],
-    8: [{ titulo: 'Prova', cor: G.amber }],
-    10: [{ titulo: 'SAC', cor: G.teal }],
-    15: [{ titulo: 'Aula', cor: G.pink }],
-    17: [{ titulo: 'Entrega', cor: G.blue }],
-    22: [{ titulo: 'Reunião', cor: G.brand }],
-    24: [{ titulo: 'Prova', cor: G.red }],
-    29: [{ titulo: 'Revisão', cor: G.teal }],
-  },
-  // Tipos de evento disponíveis ao adicionar.
+  // Tipos de evento disponíveis ao adicionar (nome + cor).
   tiposEvento: [
     { nome: 'Reunião', cor: G.brand }, { nome: 'Prova', cor: G.amber }, { nome: 'Aula', cor: G.pink },
     { nome: 'SAC', cor: G.teal }, { nome: 'Entrega', cor: G.blue }, { nome: 'Outro', cor: G.mut },
   ],
   hoje: 3,
-  agenda: [
-    { hora: '09:00', titulo: 'Reunião pedagógica', local: 'Sala 204', cor: G.brand },
-    { hora: '11:00', titulo: 'Prova de Cálculo', local: 'Turma A', cor: G.amber },
-    { hora: '14:30', titulo: 'Atendimento SAC', local: 'Online', cor: G.teal },
-    { hora: '16:00', titulo: 'Revisão de notas', local: 'Sala 101', cor: G.pink },
-  ],
-}
-
-export const sac = {
-  metrics: [
-    { label: 'Tickets abertos', value: '18', delta: '5', up: false, a: G.amber, b: G.pink },
-    { label: 'Resolvidos hoje', value: '42', delta: '15%', up: true, a: G.teal, b: G.green },
-    { label: 'Tempo médio', value: '2h 14m', delta: '8%', up: true, a: G.brand, b: G.brand2 },
-    { label: 'Satisfação', value: '96%', delta: '2%', up: true, a: G.pink, b: G.brand2 },
-  ],
-  tickets: [
-    { nome: 'Carlos Mendes', msg: 'Não consigo acessar o material...', tempo: 'há 5 min', a: G.amber, b: G.pink, curso: 'Engenharia', conversa: [
-      { de: 'them', txt: 'Olá! Não consigo acessar o material de Cálculo na plataforma.' },
-      { de: 'me', txt: 'Oi Carlos! Vou verificar isso pra você agora mesmo. 👍' },
-      { de: 'me', txt: 'Consegue tentar sair e entrar novamente na sua conta?' },
-      { de: 'them', txt: 'Funcionou! Muito obrigado pela ajuda rápida. 🙏' },
-    ] },
-    { nome: 'Júlia Rocha', msg: 'Dúvida sobre a matrícula de...', tempo: 'há 22 min', a: G.teal, b: G.green, curso: 'Direito', conversa: [
-      { de: 'them', txt: 'Oi! Tenho uma dúvida sobre a matrícula da próxima especialização.' },
-      { de: 'me', txt: 'Claro, Júlia! Qual especialização você tem interesse?' },
-      { de: 'them', txt: 'A de Aviônica. Ainda tem vaga?' },
-    ] },
-    { nome: 'Pedro Alves', msg: 'Quando sai a nota da prova?', tempo: 'há 1 h', a: G.pink, b: G.brand2, curso: 'Física', conversa: [
-      { de: 'them', txt: 'Quando sai a nota da prova de Física?' },
-      { de: 'me', txt: 'Oi Pedro! As notas saem até sexta-feira. 📅' },
-    ] },
-    { nome: 'Marina Costa', msg: 'Obrigada pela ajuda! :)', tempo: 'há 2 h', a: G.blue, b: G.teal, curso: 'Psicologia', conversa: [
-      { de: 'me', txt: 'Marina, seu certificado já está disponível na plataforma!' },
-      { de: 'them', txt: 'Obrigada pela ajuda! :)' },
-    ] },
-    { nome: 'Rafael Lima', msg: 'Preciso remarcar a reunião', tempo: 'há 3 h', a: G.amber, b: G.brand, curso: 'Arquitetura', conversa: [
-      { de: 'them', txt: 'Preciso remarcar a reunião de acompanhamento, pode ser?' },
-      { de: 'me', txt: 'Sem problema, Rafael. Qual melhor dia pra você?' },
-      { de: 'them', txt: 'Quinta à tarde seria ótimo.' },
-    ] },
-  ],
 }
 
 export const dashboard = {

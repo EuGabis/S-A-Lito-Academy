@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { alunos as alunosIniciais, tarefasColunas } from './data.js'
+import { tarefasColunas } from './data.js'
 import { supabase, supabasePronto } from './supabaseClient.js'
 
-// Fonte única de dados que as telas compartilham.
-// Alunos e Tarefas são carregados/salvos no Supabase.
+// Fonte única de dados que as telas compartilham (alunos, tarefas, eventos).
+// Sem semeadura: o sistema começa vazio e só mostra o que for cadastrado.
 const StoreCtx = createContext(null)
 export const useStore = () => useContext(StoreCtx)
 
-// ---------- ALUNOS: conversão banco <-> app ----------
+// ---------- ALUNOS ----------
 const doBanco = (row) => ({
   name: row.name, email: row.email, telefone: row.telefone, curso: row.curso,
   turma: row.turma, progresso: Number(row.progresso), status: row.status,
@@ -20,7 +20,7 @@ const paraBanco = (a) => ({
   avatar_a: a.a, avatar_b: a.b, check_data: a.check, jornada: a.jornada, reunioes: a.reunioes,
 })
 
-// ---------- TAREFAS: conversão banco <-> app ----------
+// ---------- TAREFAS ----------
 const COLDEF = tarefasColunas.map(c => ({ titulo: c.titulo, cor: c.cor }))
 const tarefaDoBanco = (r) => ({ id: r.id, t: r.titulo, tag: r.tag, tc: r.tag_cor, tb: r.tag_bg, due: r.due, a: r.avatar_a, b: r.avatar_b })
 const tarefaParaBanco = (t, coluna, ordem) => ({ titulo: t.t, tag: t.tag, tag_cor: t.tc, tag_bg: t.tb, due: t.due, avatar_a: t.a, avatar_b: t.b, coluna, ordem })
@@ -29,38 +29,33 @@ const agrupar = (rows) => COLDEF.map(cd => ({
   tarefas: rows.filter(r => r.coluna === cd.titulo).sort((a, b) => a.ordem - b.ordem).map(tarefaDoBanco),
 }))
 
-// Trava só a SEMEADURA (que não pode rodar 2x no StrictMode).
-// O carregamento em si pode rodar normalmente (é idempotente).
-let semeouAlunos = false
-let semeouTarefas = false
+// ---------- EVENTOS (Calendário) ----------
+export const MES_ATUAL = 7, ANO_ATUAL = 2026
+const eventoDoBanco = (r) => ({ id: r.id, dia: r.dia, titulo: r.titulo, cor: r.cor, hora: r.hora })
+const agruparEventos = (rows) => {
+  const map = {}
+  for (const r of rows) (map[r.dia] ||= []).push(eventoDoBanco(r))
+  return map
+}
 
 export function StoreProvider({ children }) {
   const [alunos, setAlunos] = useState([])
   const [carregando, setCarregando] = useState(true)
-  const [colunas, setColunas] = useState(tarefasColunas)
+  const [colunas, setColunas] = useState(tarefasColunas.map(c => ({ titulo: c.titulo, cor: c.cor, tarefas: [] })))
+  const [eventos, setEventos] = useState({})
   const [active, setActive] = useState('Dashboard')
 
-  // Carrega os alunos (e semeia exemplos na primeira vez).
+  // Carrega alunos.
   useEffect(() => {
     let vivo = true
     ;(async () => {
-      if (!supabasePronto) { setAlunos(alunosIniciais); setCarregando(false); return }
-      const ordenado = () => supabase.from('sa_alunos').select('*').order('created_at', { ascending: true }).order('name', { ascending: true })
+      if (!supabasePronto) { setCarregando(false); return }
       try {
-        let { data, error } = await ordenado()
+        const { data, error } = await supabase.from('sa_alunos').select('*').order('created_at', { ascending: true }).order('name', { ascending: true })
         if (error) throw error
-        if (data.length === 0 && !semeouAlunos) {
-          semeouAlunos = true
-          await supabase.from('sa_alunos').insert(alunosIniciais.map(paraBanco))
-          ;({ data } = await ordenado())
-        } else if (data.length === 0) {
-          await new Promise(res => setTimeout(res, 400))
-          ;({ data } = await ordenado())
-        }
         if (vivo) setAlunos(data.map(doBanco))
       } catch (e) {
-        console.error('Falha ao carregar alunos do Supabase, usando dados locais.', e)
-        if (vivo) setAlunos(alunosIniciais)
+        console.error('Falha ao carregar alunos.', e)
       } finally {
         if (vivo) setCarregando(false)
       }
@@ -68,27 +63,30 @@ export function StoreProvider({ children }) {
     return () => { vivo = false }
   }, [])
 
-  // Carrega as tarefas (e semeia exemplos na primeira vez).
+  // Carrega tarefas.
   useEffect(() => {
     let vivo = true
     ;(async () => {
       if (!supabasePronto) return
       try {
-        let { data, error } = await supabase.from('sa_tarefas').select('*')
+        const { data, error } = await supabase.from('sa_tarefas').select('*')
         if (error) throw error
-        if (data.length === 0 && !semeouTarefas) {
-          semeouTarefas = true
-          const seed = tarefasColunas.flatMap(c => c.tarefas.map((t, i) => tarefaParaBanco(t, c.titulo, i)))
-          await supabase.from('sa_tarefas').insert(seed)
-          ;({ data } = await supabase.from('sa_tarefas').select('*'))
-        } else if (data.length === 0) {
-          await new Promise(res => setTimeout(res, 400))
-          ;({ data } = await supabase.from('sa_tarefas').select('*'))
-        }
         if (vivo) setColunas(agrupar(data))
-      } catch (e) {
-        console.error('Falha ao carregar tarefas do Supabase, usando dados locais.', e)
-      }
+      } catch (e) { console.error('Falha ao carregar tarefas.', e) }
+    })()
+    return () => { vivo = false }
+  }, [])
+
+  // Carrega eventos.
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      if (!supabasePronto) return
+      try {
+        const { data, error } = await supabase.from('sa_eventos').select('*').eq('mes', MES_ATUAL).eq('ano', ANO_ATUAL)
+        if (error) throw error
+        if (vivo) setEventos(agruparEventos(data))
+      } catch (e) { console.error('Falha ao carregar eventos.', e) }
     })()
     return () => { vivo = false }
   }, [])
@@ -140,7 +138,6 @@ export function StoreProvider({ children }) {
     copy[toCi].tarefas.splice(idx, 0, tarefa)
     setColunas(copy)
     if (!supabasePronto) return
-    // Persiste coluna + ordem das colunas afetadas.
     const updates = []
     new Set([from.ci, toCi]).forEach(ci => {
       copy[ci].tarefas.forEach((t, i) => {
@@ -150,12 +147,28 @@ export function StoreProvider({ children }) {
     await Promise.all(updates)
   }
 
+  const adicionarEvento = async (dia, ev) => {
+    setEventos(prev => ({ ...prev, [dia]: [...(prev[dia] || []), ev] }))
+    if (!supabasePronto) return
+    const { data } = await supabase.from('sa_eventos')
+      .insert({ dia, mes: MES_ATUAL, ano: ANO_ATUAL, titulo: ev.titulo, cor: ev.cor, hora: ev.hora || null })
+      .select().single()
+    if (data) setEventos(prev => ({ ...prev, [dia]: prev[dia].map(x => x === ev ? eventoDoBanco(data) : x) }))
+  }
+
+  const removerEvento = async (dia, idx) => {
+    const alvo = (eventos[dia] || [])[idx]
+    setEventos(prev => ({ ...prev, [dia]: (prev[dia] || []).filter((_, i) => i !== idx) }))
+    if (supabasePronto && alvo?.id) await supabase.from('sa_eventos').delete().eq('id', alvo.id)
+  }
+
   const navegar = (pagina) => setActive(pagina)
 
   return (
     <StoreCtx.Provider value={{
       alunos, carregando, adicionarAluno, atualizarAluno, removerAluno,
       colunas, adicionarTarefa, removerTarefa, moverTarefa,
+      eventos, adicionarEvento, removerEvento,
       active, navegar,
     }}>
       {children}

@@ -3,7 +3,9 @@ import { useStore } from '../store.jsx'
 import { Avatar, Metric, ProgressBar, BarChart } from '../ui.jsx'
 
 export default function Dashboard() {
-  const { alunos, colunas, navegar } = useStore()
+  const { alunos, colunas, eventos, navegar } = useStore()
+  const porHora = (a, b) => (a.hora || '99:99').localeCompare(b.hora || '99:99')
+  const agendaHoje = (eventos[calendario.hoje] || []).slice().sort(porHora)
   const { weekly, weeklyHi, goals, metrics: estilo } = dashboard
 
   // Números calculados a partir dos dados reais das outras telas.
@@ -65,13 +67,15 @@ export default function Dashboard() {
         </div>
         <div className="card" style={{ flex: 1, padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="sechead">Hoje<a onClick={() => navegar('Calendário')}>Ver tudo</a></div>
-          {calendario.agenda.map((e, i) => (
-            <div className="it" key={i}>
-              <span style={{ width: 42, fontSize: 12, fontWeight: 600, color: 'var(--sub)' }}>{e.hora}</span>
-              <div className="dot" style={{ width: 9, height: 9, borderRadius: '50%', background: e.cor }} />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{e.titulo}</span>
-            </div>
-          ))}
+          {agendaHoje.length === 0
+            ? <p style={{ fontSize: 13, color: 'var(--mut)' }}>Nenhum evento hoje.</p>
+            : agendaHoje.map((e, i) => (
+              <div className="it" key={i}>
+                <span style={{ width: 42, fontSize: 12, fontWeight: 600, color: 'var(--sub)' }}>{e.hora || '—'}</span>
+                <div className="dot" style={{ width: 9, height: 9, borderRadius: '50%', background: e.cor }} />
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{e.titulo}</span>
+              </div>
+            ))}
         </div>
       </div>
     </>

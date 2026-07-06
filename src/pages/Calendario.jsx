@@ -1,18 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { calendario } from '../data.js'
 import { useStore } from '../store.jsx'
-import { supabase, supabasePronto } from '../supabaseClient.js'
-
-const MES = 7, ANO = 2026
-let semeouEventos = false // trava a semeadura (StrictMode)
-
-const eventoDoBanco = (r) => ({ id: r.id, titulo: r.titulo, cor: r.cor, hora: r.hora })
-// Agrupa as linhas do banco por dia: { 3: [ev, ev], ... }
-const agruparEventos = (rows) => {
-  const map = {}
-  for (const r of rows) (map[r.dia] ||= []).push(eventoDoBanco(r))
-  return map
-}
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -26,7 +14,6 @@ function DiaModal({ dia, eventos, tipos, alunos, onAdd, onRemove, onClose }) {
   const [tipo, setTipo] = useState(tipos[0])
   const [aluno, setAluno] = useState('')
 
-  // Ao escolher um aluno, o título passa a ser o nome dele (ainda editável).
   const escolherAluno = (nome) => {
     setAluno(nome)
     if (nome) setTitulo(`${tipo.nome} — ${nome}`)
@@ -34,14 +21,12 @@ function DiaModal({ dia, eventos, tipos, alunos, onAdd, onRemove, onClose }) {
 
   const adicionar = () => {
     const t = titulo.trim() || tipo.nome
-    onAdd(dia, { titulo: t, cor: tipo.cor, hora, aluno: aluno || null })
+    onAdd(dia, { titulo: t, cor: tipo.cor, hora })
     setTitulo('')
     setAluno('')
   }
 
-  const ordenados = eventos
-    .map((e, i) => ({ ...e, _i: i }))  // guarda o índice original para remover certo
-    .sort(porHora)
+  const ordenados = eventos.map((e, i) => ({ ...e, _i: i })).sort(porHora)
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -97,61 +82,18 @@ function DiaModal({ dia, eventos, tipos, alunos, onAdd, onRemove, onClose }) {
 }
 
 export default function Calendario() {
-  const { alunos } = useStore()
-  const { hoje, agenda, tiposEvento } = calendario
-  const [eventos, setEventos] = useState(supabasePronto ? {} : calendario.eventos)
+  const { alunos, eventos, adicionarEvento, removerEvento } = useStore()
+  const { hoje, tiposEvento } = calendario
   const [diaAberto, setDiaAberto] = useState(null)
 
-  // Carrega os eventos do banco (e semeia os exemplos na primeira vez).
-  useEffect(() => {
-    let vivo = true
-    ;(async () => {
-      if (!supabasePronto) return
-      try {
-        const busca = () => supabase.from('sa_eventos').select('*').eq('mes', MES).eq('ano', ANO)
-        let { data, error } = await busca()
-        if (error) throw error
-        if (data.length === 0 && !semeouEventos) {
-          semeouEventos = true
-          const seed = Object.entries(calendario.eventos).flatMap(([dia, evs]) =>
-            evs.map(e => ({ dia: Number(dia), mes: MES, ano: ANO, titulo: e.titulo, cor: e.cor, hora: e.hora || null })))
-          await supabase.from('sa_eventos').insert(seed)
-          ;({ data } = await busca())
-        } else if (data.length === 0) {
-          await new Promise(res => setTimeout(res, 400))
-          ;({ data } = await busca())
-        }
-        if (vivo) setEventos(agruparEventos(data))
-      } catch (e) {
-        console.error('Falha ao carregar eventos, usando dados locais.', e)
-        if (vivo) setEventos(calendario.eventos)
-      }
-    })()
-    return () => { vivo = false }
-  }, [])
-
-  const adicionarEvento = async (dia, ev) => {
-    setEventos(prev => ({ ...prev, [dia]: [...(prev[dia] || []), ev] })) // otimista
-    if (!supabasePronto) return
-    const { data } = await supabase.from('sa_eventos')
-      .insert({ dia, mes: MES, ano: ANO, titulo: ev.titulo, cor: ev.cor, hora: ev.hora || null })
-      .select().single()
-    if (data) setEventos(prev => ({ ...prev, [dia]: prev[dia].map(x => x === ev ? eventoDoBanco(data) : x) }))
-  }
-
-  const removerEvento = async (dia, idx) => {
-    const alvo = (eventos[dia] || [])[idx]
-    setEventos(prev => ({ ...prev, [dia]: (prev[dia] || []).filter((_, i) => i !== idx) }))
-    if (supabasePronto && alvo?.id) await supabase.from('sa_eventos').delete().eq('id', alvo.id)
-  }
-
-  // Julho/2026 começa numa quarta-feira (offset 3 células vazias).
   const cells = [null, null, null]
   for (let d = 1; d <= 31; d++) cells.push(d)
   while (cells.length % 7) cells.push(null)
 
   const semanas = []
   for (let w = 0; w < cells.length / 7; w++) semanas.push(cells.slice(w * 7, w * 7 + 7))
+
+  const agendaHoje = (eventos[hoje] || []).slice().sort(porHora)
 
   return (
     <div className="row">
@@ -164,7 +106,7 @@ export default function Calendario() {
               if (d === null) return <div className="cell" key={di} />
               const eh = d === hoje
               const evs = eventos[d] || []
-              const primeiro = evs[0]
+              const primeiro = evs.slice().sort(porHora)[0]
               return (
                 <div className={`cell clicavel ${eh ? 'today' : 'fill'}`} key={di} onClick={() => setDiaAberto(d)}>
                   <div className="dn">{d}</div>
@@ -183,15 +125,17 @@ export default function Calendario() {
 
       <div className="card" style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="sechead">Hoje, {hoje} Jul</div>
-        {agenda.map((e, i) => (
-          <div className="it" key={i}>
-            <div className="evbar" style={{ height: 42, background: e.cor }} />
-            <div>
-              <b style={{ fontSize: 13, fontWeight: 600, display: 'block' }}>{e.titulo}</b>
-              <p style={{ fontSize: 12, color: 'var(--sub)' }}>{e.hora} · {e.local}</p>
+        {agendaHoje.length === 0
+          ? <p style={{ fontSize: 13, color: 'var(--mut)' }}>Nenhum evento hoje. Clique num dia para adicionar.</p>
+          : agendaHoje.map((e, i) => (
+            <div className="it" key={i}>
+              <div className="evbar" style={{ height: 42, background: e.cor }} />
+              <div>
+                <b style={{ fontSize: 13, fontWeight: 600, display: 'block' }}>{e.titulo}</b>
+                <p style={{ fontSize: 12, color: 'var(--sub)' }}>{e.hora || 'Sem horário'}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {diaAberto !== null && (
