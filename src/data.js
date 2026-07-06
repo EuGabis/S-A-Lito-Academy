@@ -134,29 +134,11 @@ export const calendario = {
 }
 
 export const dashboard = {
+  // Só as cores/estilo das 4 métricas do topo (os valores são calculados).
   metrics: [
-    { label: 'Alunos ativos', value: '248', delta: '8%', up: true, a: G.brand, b: G.brand2 },
-    { label: 'Tarefas pendentes', value: '12', delta: '4', up: true, a: G.amber, b: G.pink },
-    { label: 'Taxa de conclusão', value: '87%', delta: '5%', up: true, a: G.teal, b: G.green },
-    { label: 'Alunos em risco', value: '3', delta: '2%', up: false, a: G.red, b: G.pink },
-  ],
-  weekly: [['Seg', 12], ['Ter', 18], ['Qua', 9], ['Qui', 22], ['Sex', 26], ['Sáb', 7], ['Dom', 5]],
-  weeklyHi: 4,
-  goals: [
-    { label: 'Matrículas', pct: 0.72, a: G.brand, b: G.brand2 },
-    { label: 'Retenção', pct: 0.9, a: G.teal, b: G.green },
-    { label: 'Satisfação', pct: 0.84, a: G.amber, b: G.pink },
-  ],
-  activity: [
-    { name: 'Ana Beatriz', text: 'concluiu a tarefa Redação I', time: 'há 12 min', a: G.brand, b: G.teal },
-    { name: 'Carlos Mendes', text: 'enviou uma dúvida no SAC', time: 'há 40 min', a: G.amber, b: G.pink },
-    { name: 'Júlia Rocha', text: 'matriculou-se em Cálculo', time: 'há 1 h', a: G.teal, b: G.green },
-    { name: 'Pedro Alves', text: 'faltou à aula de Física', time: 'há 2 h', a: G.red, b: G.pink },
-  ],
-  today: [
-    { time: '09:00', text: 'Reunião pedagógica', c: G.brand },
-    { time: '11:30', text: 'Atendimento — Carlos', c: G.amber },
-    { time: '14:00', text: 'Revisão de notas', c: G.teal },
-    { time: '16:00', text: 'Call com responsáveis', c: G.pink },
+    { a: G.brand, b: G.brand2 },
+    { a: G.amber, b: G.pink },
+    { a: G.teal, b: G.green },
+    { a: G.red, b: G.pink },
   ],
 }
