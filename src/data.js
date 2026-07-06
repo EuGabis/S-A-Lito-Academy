@@ -124,29 +124,6 @@ export const tarefasColunas = [
   ] },
 ]
 
-export const relatorios = {
-  metrics: [
-    { label: 'Receita mensal', value: 'R$ 84k', delta: '12%', up: true, a: G.brand, b: G.brand2 },
-    { label: 'Novos alunos', value: '64', delta: '9%', up: true, a: G.teal, b: G.green },
-    { label: 'Evasão', value: '2,4%', delta: '0,6%', up: false, a: G.red, b: G.pink },
-    { label: 'NPS', value: '72', delta: '4', up: true, a: G.amber, b: G.pink },
-  ],
-  crescimento: [['Jan', 52], ['Fev', 61], ['Mar', 58], ['Abr', 70], ['Mai', 66], ['Jun', 78]],
-  crescimentoHi: 5,
-  porCurso: [
-    { label: 'Célula', pct: '32%', cor: G.brand },
-    { label: 'Aviônica', pct: '24%', cor: G.teal },
-    { label: 'GMP', pct: '20%', cor: G.amber },
-    { label: 'Outros', pct: '24%', cor: G.pink },
-  ],
-  turmas: [
-    { label: 'Turma A — Célula', pct: 0.92, a: G.teal, b: G.green },
-    { label: 'Turma B — Aviônica', pct: 0.78, a: G.brand, b: G.brand2 },
-    { label: 'Turma C — GMP', pct: 0.64, a: G.amber, b: G.pink },
-    { label: 'Turma D — Básico', pct: 0.48, a: G.pink, b: G.brand2 },
-  ],
-}
-
 export const calendario = {
   // Eventos por dia do mês (Julho/2026). Cada dia tem uma lista. hoje = dia 3.
   eventos: {

@@ -20,9 +20,11 @@ export function Metric({ label, value, delta, up, a, b, onClick }) {
   return (
     <div className="card metric" onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       <div className="h">
-        <span className="badge" style={{ color: up ? G.green : G.red, background: up ? 'var(--greenBg)' : 'var(--redBg)' }}>
-          {up ? '↑' : '↓'} {delta}
-        </span>
+        {delta != null && (
+          <span className="badge" style={{ color: up ? G.green : G.red, background: up ? 'var(--greenBg)' : 'var(--redBg)' }}>
+            {up ? '↑' : '↓'} {delta}
+          </span>
+        )}
       </div>
       <div>
         <div className="val">{value}</div>
