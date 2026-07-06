@@ -5,6 +5,7 @@ import { Avatar, Badge, ProgressBar } from '../ui.jsx'
 import FormularioReuniao from './FormularioReuniao.jsx'
 import Jornada from './Jornada.jsx'
 import Documento from './Documento.jsx'
+import Confirmacao from './Confirmacao.jsx'
 import { montarAta, montarFichaCompleta } from '../documento.js'
 
 const barColor = (p) => p >= 0.7 ? ['#14c5a7', '#26c478'] : p >= 0.5 ? ['#6d5ef6', '#a37af7'] : ['#ffa826', '#ff6392']
@@ -55,8 +56,9 @@ function AbaDados({ aluno, check, setCheck }) {
 }
 
 export default function FichaAluno({ aluno, onClose }) {
-  const { atualizarAluno } = useStore()
+  const { atualizarAluno, removerAluno } = useStore()
   const [tab, setTab] = useState('Dados')
+  const [confirmarExcluir, setConfirmarExcluir] = useState(false)
   const [check, setCheckLocal] = useState(aluno.check)
   const [jornada, setJornadaLocal] = useState(aluno.jornada)
   // Respostas de todas as reuniões, agrupadas por aba.
@@ -98,6 +100,8 @@ export default function FichaAluno({ aluno, onClose }) {
             <p>{aluno.curso} · {aluno.turma}</p>
           </div>
           <Badge text={aluno.status} color={sc.color} bg={sc.bg} />
+          <button title="Excluir aluno" onClick={() => setConfirmarExcluir(true)}
+            style={{ background: 'var(--faint)', border: 'none', borderRadius: 10, width: 34, height: 34, cursor: 'pointer', fontSize: 15 }}>🗑️</button>
           <button className="mclose" onClick={onClose}>✕</button>
         </div>
 
@@ -122,6 +126,15 @@ export default function FichaAluno({ aluno, onClose }) {
       </div>
 
       {doc && <Documento titulo={doc.titulo} html={doc.html} onClose={() => setDoc(null)} />}
+
+      {confirmarExcluir && (
+        <Confirmacao
+          titulo="Excluir aluno?"
+          mensagem={`O aluno "${aluno.name}" e toda a sua ficha (checklist, jornada, reuniões) serão removidos. Essa ação não pode ser desfeita.`}
+          onConfirmar={() => { removerAluno(aluno.email); setConfirmarExcluir(false); onClose() }}
+          onCancelar={() => setConfirmarExcluir(false)}
+        />
+      )}
     </div>
   )
 }

@@ -100,6 +100,11 @@ export function StoreProvider({ children }) {
     if (!error && data) setAlunos(prev => prev.map(a => a.email === novo.email ? doBanco(data) : a))
   }
 
+  const removerAluno = async (email) => {
+    setAlunos(prev => prev.filter(a => a.email !== email))
+    if (supabasePronto) await supabase.from('sa_alunos').delete().eq('email', email)
+  }
+
   const atualizarAluno = async (email, patch) => {
     setAlunos(prev => prev.map(a => a.email === email ? { ...a, ...patch } : a))
     if (!supabasePronto) return
@@ -149,7 +154,7 @@ export function StoreProvider({ children }) {
 
   return (
     <StoreCtx.Provider value={{
-      alunos, carregando, adicionarAluno, atualizarAluno,
+      alunos, carregando, adicionarAluno, atualizarAluno, removerAluno,
       colunas, adicionarTarefa, removerTarefa, moverTarefa,
       active, navegar,
     }}>
