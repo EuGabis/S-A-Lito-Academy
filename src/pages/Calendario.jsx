@@ -1,6 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { calendario } from '../data.js'
 import { useStore } from '../store.jsx'
+import { supabase, supabasePronto } from '../supabaseClient.js'
+
+const MES = 7, ANO = 2026
+let semeouEventos = false // trava a semeadura (StrictMode)
+
+const eventoDoBanco = (r) => ({ id: r.id, titulo: r.titulo, cor: r.cor, hora: r.hora })
+// Agrupa as linhas do banco por dia: { 3: [ev, ev], ... }
+const agruparEventos = (rows) => {
+  const map = {}
+  for (const r of rows) (map[r.dia] ||= []).push(eventoDoBanco(r))
+  return map
+}
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -87,14 +99,51 @@ function DiaModal({ dia, eventos, tipos, alunos, onAdd, onRemove, onClose }) {
 export default function Calendario() {
   const { alunos } = useStore()
   const { hoje, agenda, tiposEvento } = calendario
-  const [eventos, setEventos] = useState(calendario.eventos)
+  const [eventos, setEventos] = useState(supabasePronto ? {} : calendario.eventos)
   const [diaAberto, setDiaAberto] = useState(null)
 
-  const adicionarEvento = (dia, ev) =>
-    setEventos(prev => ({ ...prev, [dia]: [...(prev[dia] || []), ev] }))
+  // Carrega os eventos do banco (e semeia os exemplos na primeira vez).
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      if (!supabasePronto) return
+      try {
+        const busca = () => supabase.from('sa_eventos').select('*').eq('mes', MES).eq('ano', ANO)
+        let { data, error } = await busca()
+        if (error) throw error
+        if (data.length === 0 && !semeouEventos) {
+          semeouEventos = true
+          const seed = Object.entries(calendario.eventos).flatMap(([dia, evs]) =>
+            evs.map(e => ({ dia: Number(dia), mes: MES, ano: ANO, titulo: e.titulo, cor: e.cor, hora: e.hora || null })))
+          await supabase.from('sa_eventos').insert(seed)
+          ;({ data } = await busca())
+        } else if (data.length === 0) {
+          await new Promise(res => setTimeout(res, 400))
+          ;({ data } = await busca())
+        }
+        if (vivo) setEventos(agruparEventos(data))
+      } catch (e) {
+        console.error('Falha ao carregar eventos, usando dados locais.', e)
+        if (vivo) setEventos(calendario.eventos)
+      }
+    })()
+    return () => { vivo = false }
+  }, [])
 
-  const removerEvento = (dia, idx) =>
+  const adicionarEvento = async (dia, ev) => {
+    setEventos(prev => ({ ...prev, [dia]: [...(prev[dia] || []), ev] })) // otimista
+    if (!supabasePronto) return
+    const { data } = await supabase.from('sa_eventos')
+      .insert({ dia, mes: MES, ano: ANO, titulo: ev.titulo, cor: ev.cor, hora: ev.hora || null })
+      .select().single()
+    if (data) setEventos(prev => ({ ...prev, [dia]: prev[dia].map(x => x === ev ? eventoDoBanco(data) : x) }))
+  }
+
+  const removerEvento = async (dia, idx) => {
+    const alvo = (eventos[dia] || [])[idx]
     setEventos(prev => ({ ...prev, [dia]: (prev[dia] || []).filter((_, i) => i !== idx) }))
+    if (supabasePronto && alvo?.id) await supabase.from('sa_eventos').delete().eq('id', alvo.id)
+  }
 
   // Julho/2026 começa numa quarta-feira (offset 3 células vazias).
   const cells = [null, null, null]
