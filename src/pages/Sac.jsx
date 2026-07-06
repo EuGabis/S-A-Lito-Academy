@@ -4,7 +4,7 @@ import { useStore } from '../store.jsx'
 import { Avatar, Badge, Metric } from '../ui.jsx'
 import { G } from '../data.js'
 
-const ticketDoBanco = (r) => ({ id: r.id, nome: r.nome, curso: r.curso, msg: r.ultima_msg, tempo: r.tempo, a: r.avatar_a, b: r.avatar_b })
+const ticketDoBanco = (r) => ({ id: r.id, nome: r.nome, curso: r.curso, email: r.email, assunto: r.assunto, msg: r.ultima_msg, tempo: r.tempo, a: r.avatar_a, b: r.avatar_b })
 
 // Modal simples para iniciar uma conversa a partir de um aluno.
 function NovaConversa({ alunos, onCriar, onClose }) {
@@ -50,7 +50,7 @@ export default function Sac() {
     ;(async () => {
       if (!supabasePronto) return
       try {
-        const { data: tk, error } = await supabase.from('sa_sac_tickets').select('*').order('created_at', { ascending: true })
+        const { data: tk, error } = await supabase.from('sa_sac_tickets').select('*').order('created_at', { ascending: false })
         if (error) throw error
         const { data: ms } = await supabase.from('sa_sac_mensagens').select('*').order('ordem', { ascending: true })
         const porTicket = {}
@@ -134,8 +134,11 @@ export default function Sac() {
                 <Avatar name={ticket.nome} a={ticket.a} b={ticket.b} size={40} />
                 <div style={{ flex: 1 }}>
                   <b style={{ fontSize: 14, fontWeight: 600 }}>{ticket.nome}</b>
-                  <p style={{ fontSize: 12, color: 'var(--green)' }}>{ticket.curso}</p>
+                  <p style={{ fontSize: 12, color: 'var(--sub)' }}>
+                    {[ticket.curso, ticket.email].filter(Boolean).join(' · ') || 'Sem contato'}
+                  </p>
                 </div>
+                {ticket.assunto && <Badge text={ticket.assunto} color={G.brand} bg="var(--vio)" />}
                 <Badge text="Aberto" color={G.amber} bg="var(--amberBg)" />
               </div>
               <div className="msgs">
